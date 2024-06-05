@@ -16,4 +16,5 @@ type Game struct {
 
 type UpdateVote struct {
 	HandChoice string `json:"hand_choice"`
+	GameTypeId int    `json:"game_type_id"`
 }

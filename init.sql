@@ -6,6 +6,7 @@ CREATE TABLE games (
     game_type_id INTEGER NULL,
     hand_choice VARCHAR(100) NULL,
     created_at TIMESTAMP default now() NOT null
+    updated_at TIMESTAMP default now() NOT null
 );
 
 CREATE TABLE game_types (

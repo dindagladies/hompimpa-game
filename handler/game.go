@@ -31,21 +31,32 @@ func GetGameByCode(c *fiber.Ctx) error {
 	var games []model.Game
 	var db = config.DB
 
-	if round != "" {
+	if round != "" && round != "next" {
 		db.Where("code = ? AND round = ?", code, round).Order("round desc").Find(&games)
+	} else if round == "next" {
+		db.Where("code = ? AND round = ?", code, 0).Order("round desc").Find(&games)
 	} else {
 		db.Where("code = ?", code).Order("round desc").Find(&games)
 	}
 
 	if len(games) == 0 {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"message": "Game not found",
+			"message": "Game or round doesn't exist",
 			"data":    nil,
 		})
 	}
 
+	nextGameType := 1
+	if len(games) <= 2 && round == "next" {
+		nextGameType = 0
+	} else if len(games) <= 2 && round == "" {
+		nextGameType = 2
+	}
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "Game found",
-		"data":    games,
+		"message":        "Game found",
+		"data":           games,
+		"next_game_type": nextGameType,
+		// "next_round":
 	})
 }
