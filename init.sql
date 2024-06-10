@@ -24,5 +24,7 @@ INSERT INTO public.game_types("name") VALUES('hompimpa');
 INSERT INTO public.game_types("name") VALUES('rock paper scissors');
 
 CREATE TABLE codes (
-    code VARCHAR(100) not NULL UNIQUE
+    code VARCHAR(100) not NULL UNIQUE,
+    created_at TIMESTAMP default now() not null,
+    is_finished BOOLEAN default false
 );
