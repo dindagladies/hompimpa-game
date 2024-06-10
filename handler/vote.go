@@ -63,6 +63,8 @@ func Vote(c *fiber.Ctx) error {
 		})
 	}
 
+	db.Joins("Player").Where("code = ? AND player_id = ?", code, playerId).First(&game)
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Vote updated successfully",
 		"data":    game,

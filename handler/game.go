@@ -10,7 +10,7 @@ import (
 func GetGames(c *fiber.Ctx) error {
 	var games []model.Game
 	var db = config.DB
-	db.Find(&games)
+	db.Joins("Player").Find(&games)
 
 	if len(games) == 0 {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -32,11 +32,11 @@ func GetGameByCode(c *fiber.Ctx) error {
 	var db = config.DB
 
 	if round != "" && round != "next" {
-		db.Where("code = ? AND round = ?", code, round).Order("round desc").Find(&games)
+		db.Joins("Player").Where("code = ? AND round = ?", code, round).Order("round desc").Find(&games)
 	} else if round == "next" {
-		db.Where("code = ? AND round = ?", code, 0).Order("round desc").Find(&games)
+		db.Joins("Player").Where("code = ? AND round = ?", code, 0).Order("round desc").Find(&games)
 	} else {
-		db.Where("code = ?", code).Order("round desc").Find(&games)
+		db.Joins("Player").Where("code = ?", code).Order("round desc").Find(&games)
 	}
 
 	if len(games) == 0 {
