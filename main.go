@@ -59,8 +59,10 @@ func main() {
 	app.Static("/", "./index.html")
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowHeaders: "Origin, Content-Type, Accept",
+		AllowOrigins:     "http://127.0.0.1:3000",
+		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowCredentials: true,
+		AllowMethods:     "GET,POST",
 	}))
 
 	go func() {
@@ -72,8 +74,8 @@ func main() {
 			return fiber.ErrUpgradeRequired
 		})
 
+		go socketListen()
 	}()
-	go socketListen()
 
 	app.Get("/ws/", websocket.New(func(c *websocket.Conn) {
 		// When the function returns, unregister the client and close the connection

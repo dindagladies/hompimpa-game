@@ -54,7 +54,8 @@ func GetPlayerLogin(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "Players found",
-		"data":    players,
+		"message":  "Players found",
+		"id":       players[0].ID,
+		"username": players[0].Username,
 	})
 }
