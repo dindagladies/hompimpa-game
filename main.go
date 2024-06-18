@@ -47,9 +47,12 @@ func socketListen() {
 	}
 }
 
-func main() {
+func init() {
 	config.ConnectDB()
+	config.InitSessionStore()
+}
 
+func main() {
 	// app config
 	app := fiber.New()
 

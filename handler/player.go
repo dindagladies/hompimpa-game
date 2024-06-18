@@ -22,10 +22,39 @@ func CreatePlayer(c *fiber.Ctx) error {
 		})
 	}
 
+	if err := config.CreateUserSession(c, data.ID, data.Username); err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": "Failed to create session player",
+		})
+	}
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Player created successfully",
 		"data":    data,
 	})
 }
 
-// TODO : get session player
+func GetPlayerLogin(c *fiber.Ctx) error {
+	userData, err := config.GetUserSession(c)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to get session",
+		})
+	}
+
+	var players []model.Player
+	var db = config.DB
+	db.Find(&players, userData["ID"].(int))
+
+	if len(players) == 0 {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"message": "No players found",
+			"data":    nil,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Players found",
+		"data":    players,
+	})
+}
