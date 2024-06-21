@@ -59,3 +59,29 @@ func GetPlayerLogin(c *fiber.Ctx) error {
 		"username": players[0].Username,
 	})
 }
+
+func LogoutPlayer(c *fiber.Ctx) error {
+	_, err := config.GetUserSession(c)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to get session",
+		})
+	}
+
+	sessionRemove, err := config.RemoveUserSession(c)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to get session",
+		})
+	}
+
+	if sessionRemove {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"message": "Logout success",
+		})
+	}
+
+	return c.Status(500).JSON(fiber.Map{
+		"message": "Failed to logout",
+	})
+}
