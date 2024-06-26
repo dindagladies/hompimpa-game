@@ -26,10 +26,36 @@ func GetGames(c *fiber.Ctx) error {
 }
 
 func GetGameByCode(c *fiber.Ctx) error {
+
 	code := c.Params("code")
 	round := c.Query("round")
 	var games []model.Game
 	var db = config.DB
+
+	/*
+	* Check user session
+	 */
+	userData, err := config.GetUserSession(c)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to get session",
+		})
+	}
+
+	if userData["ID"] == 0 {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "You are not logged in",
+			"data":    nil,
+		})
+	}
+
+	if db.Where("player_id = ?", userData["ID"].(int)).Find(&games).RowsAffected == 0 {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "You are not joining this game yet",
+			"data":    nil,
+		})
+	}
+	/* End */
 
 	if round != "" && round != "next" {
 		db.Joins("Player").Where("code = ? AND round = ?", code, round).Order("round desc").Find(&games)

@@ -17,8 +17,14 @@ func CreatePlayer(c *fiber.Ctx) error {
 
 	db := config.DB
 	if err := db.Create(&data).Error; err != nil {
+		if err.Error() == "ERROR: duplicate key value violates unique constraint \"players_username_key\" (SQLSTATE 23505)" {
+			return c.Status(400).JSON(fiber.Map{
+				"message": "Username already exists",
+			})
+		}
+
 		return c.Status(500).JSON(fiber.Map{
-			"message": "Failed to create player",
+			"message": "Failed to create player.",
 		})
 	}
 
@@ -47,8 +53,8 @@ func GetPlayerLogin(c *fiber.Ctx) error {
 	db.Find(&players, userData["ID"].(int))
 
 	if len(players) == 0 {
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"message": "No players found",
+		return c.Status(404).JSON(fiber.Map{
+			"message": "Please login first",
 			"data":    nil,
 		})
 	}
@@ -57,6 +63,44 @@ func GetPlayerLogin(c *fiber.Ctx) error {
 		"message":  "Players found",
 		"id":       players[0].ID,
 		"username": players[0].Username,
+	})
+}
+
+func ExitGame(c *fiber.Ctx) error {
+	userData, err := config.GetUserSession(c)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to get session",
+			"data":    nil,
+		})
+	}
+
+	var player model.Player
+	var db = config.DB
+	db.Find(&player, userData["ID"].(int))
+	if player.ID == 0 {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "Player not found",
+		})
+	}
+
+	code := c.Params("code")
+	var game model.Game
+	db.Where("code = ? AND player_id = ?", code, player.ID).Order("id desc").First(&game)
+	if game.ID == 0 {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "Player not found in this game",
+		})
+	}
+
+	if err := db.Delete(&game).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to exit game",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Player exit game successfully",
 	})
 }
 
@@ -71,7 +115,7 @@ func LogoutPlayer(c *fiber.Ctx) error {
 	sessionRemove, err := config.RemoveUserSession(c)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to get session",
+			"message": "Failed to logout",
 		})
 	}
 
@@ -81,7 +125,7 @@ func LogoutPlayer(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Status(500).JSON(fiber.Map{
+	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 		"message": "Failed to logout",
 	})
 }

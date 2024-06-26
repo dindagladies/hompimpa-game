@@ -8,6 +8,7 @@ import (
 )
 
 func Start(c *fiber.Ctx) error {
+	// TODO: implement session player
 	game := new(model.Game)
 
 	if err := c.BodyParser(game); err != nil {
