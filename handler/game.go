@@ -26,7 +26,6 @@ func GetGames(c *fiber.Ctx) error {
 }
 
 func GetGameByCode(c *fiber.Ctx) error {
-
 	code := c.Params("code")
 	round := c.Query("round")
 	var games []model.Game
@@ -84,5 +83,25 @@ func GetGameByCode(c *fiber.Ctx) error {
 		"data":           games,
 		"next_game_type": nextGameType,
 		// "next_round":
+	})
+}
+
+func GetGameInfo(c *fiber.Ctx) error {
+	code := c.Params("code")
+	var codeGame model.Code
+	var db = config.DB
+
+	db.Where("code = ?", code).Find(&codeGame)
+
+	if codeGame.HostID == 0 {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "Game info not found",
+			"data":    nil,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Game info found",
+		"data":    codeGame,
 	})
 }

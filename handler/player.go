@@ -41,6 +41,7 @@ func CreatePlayer(c *fiber.Ctx) error {
 }
 
 func GetPlayerLogin(c *fiber.Ctx) error {
+	/* Get session data */
 	userData, err := config.GetUserSession(c)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -58,6 +59,7 @@ func GetPlayerLogin(c *fiber.Ctx) error {
 			"data":    nil,
 		})
 	}
+	/* End */
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message":  "Players found",

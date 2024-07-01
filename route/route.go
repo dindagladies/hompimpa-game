@@ -19,6 +19,8 @@ func SetupRoutes(app *fiber.App) {
 	api.Post("/exit/:code", handler.ExitGame)
 
 	api.Post("/start", handler.Start)
+	api.Get("/game/info/:code", handler.GetGameInfo)
+	api.Post("/game/info/:code", handler.UpdateGameInfo)
 	api.Post("/vote/:code/:playerId", handler.Vote)
 	api.Get("/count/:code", handler.CountResult)
 }

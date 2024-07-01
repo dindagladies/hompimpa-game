@@ -27,4 +27,5 @@ CREATE TABLE codes (
     code VARCHAR(100) not NULL UNIQUE,
     created_at TIMESTAMP default now() not null,
     is_finished BOOLEAN default false
-);
+    host_id INTEGER --from players
+    started_at VARCHAR(100) NULL
