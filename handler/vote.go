@@ -3,6 +3,7 @@ package handler
 import (
 	"hompimpa-game/config"
 	"hompimpa-game/model"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -42,7 +43,6 @@ func Start(c *fiber.Ctx) error {
 func Vote(c *fiber.Ctx) error {
 	code := c.Params("code")
 	playerId := c.Params("playerId")
-
 	db := config.DB
 	var game model.Game
 	if err := db.Where("code = ? AND player_id = ? AND round = ?", code, playerId, 0).First(&game).Error; err != nil {
@@ -125,6 +125,8 @@ func CountResult(c *fiber.Ctx) error {
 			})
 		}
 
+		// TODO: update data in code table (is_finished)
+
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"continue_round": false,
 			"message":        "Game result",
@@ -170,6 +172,35 @@ func CountResult(c *fiber.Ctx) error {
 	if winnerChoice != "draw" && winnerChoice != "" {
 		db.Model(&games).Where("code = ? AND round = ? AND hand_choice NOT IN (?)", code, 0, winnerChoice).Update("round", newRound)
 		// db.Model(&game).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, handWinner).Update("round", 0)
+
+		// insert result
+		var winnerPlayerIds []int
+		var loserPlayerIds []int
+		for _, game := range games {
+			if game.HandChoice == winnerChoice {
+				winnerPlayerIds = append(winnerPlayerIds, game.PlayerId)
+			} else {
+				loserPlayerIds = append(loserPlayerIds, game.PlayerId)
+			}
+		}
+
+		log.Println(winnerPlayerIds, loserPlayerIds)
+
+		result := model.Result{
+			Code:            code,
+			HandChoice:      winnerChoice,
+			WinnerPlayerIds: winnerPlayerIds,
+			LoserPlayerIds:  loserPlayerIds,
+			Round:           newRound,
+		}
+
+		log.Println(result)
+
+		if err := db.Create(&result).Error; err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"message": "Failed to insert result",
+			})
+		}
 	}
 
 	// if winner has more than 1

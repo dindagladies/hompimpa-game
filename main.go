@@ -47,6 +47,11 @@ func socketListen() {
 	}
 }
 
+type Message struct {
+	Action string
+	Code   string
+}
+
 func init() {
 	config.ConnectDB()
 	config.InitSessionStore()
@@ -65,19 +70,18 @@ func main() {
 		AllowMethods:     "GET,POST",
 	}))
 
-	go func() {
-		app.Use(func(c *fiber.Ctx) error {
-			if websocket.IsWebSocketUpgrade(c) {
-				return c.Next()
-			}
+	// go func() {
+	// TODO: fix bug : upgrade required
+	go socketListen()
+	// }()
 
-			return fiber.ErrUpgradeRequired
-		})
+	app.Get("/ws/", func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			return c.Next()
+		}
 
-		go socketListen()
-	}()
-
-	app.Get("/ws/", websocket.New(func(c *websocket.Conn) {
+		return fiber.ErrUpgradeRequired
+	}, websocket.New(func(c *websocket.Conn) {
 		// When the function returns, unregister the client and close the connection
 		defer func() {
 			unregister <- c

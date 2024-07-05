@@ -105,3 +105,40 @@ func GetGameInfo(c *fiber.Ctx) error {
 		"data":    codeGame,
 	})
 }
+
+func GameResult(c *fiber.Ctx) error {
+	code := c.Params("code")
+	var result model.Result
+	var db = config.DB
+
+	db.Where("code = ?", code).Order("id desc").Find(&result)
+	if result.ID == 0 {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "Game result not found",
+			"data":    nil,
+		})
+	}
+
+	var detailWinnerPlayers []model.Player
+	for _, winnerPlayer := range result.WinnerPlayerIds {
+		var player model.Player
+		db.Where("id = ?", winnerPlayer).Find(&player)
+		detailWinnerPlayers = append(detailWinnerPlayers, player)
+	}
+
+	result.WinnerPlayer = append(result.WinnerPlayer, detailWinnerPlayers...)
+
+	var detailLoserPlayers []model.Player
+	for _, loserPlayer := range result.LoserPlayerIds {
+		var player model.Player
+		db.Where("id = ?", loserPlayer).Find(&player)
+		detailLoserPlayers = append(detailLoserPlayers, player)
+	}
+
+	result.LoserPlayer = append(result.LoserPlayer, detailLoserPlayers...)
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Game result found",
+		"data":    result,
+	})
+}

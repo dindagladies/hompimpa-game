@@ -23,4 +23,5 @@ func SetupRoutes(app *fiber.App) {
 	api.Post("/game/info/:code", handler.UpdateGameInfo)
 	api.Post("/vote/:code/:playerId", handler.Vote)
 	api.Get("/count/:code", handler.CountResult)
+	api.Get("/result/:code", handler.GameResult)
 }
