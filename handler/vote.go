@@ -98,18 +98,31 @@ func CountResult(c *fiber.Ctx) error {
 	if len(games) == 2 { //game type id = 2
 		handFirstPlayer := games[0].HandChoice
 		handSecondPlayer := games[1].HandChoice
+		var playerData = make(map[string]int)
+		playerData[handFirstPlayer] = (games[0].PlayerId)
+		playerData[handSecondPlayer] = (games[1].PlayerId)
+		log.Println(playerData)
 		winner := ""
+		var winnerPlayerId int
+		var looserPlayerId int
 
 		if (handFirstPlayer == "rock" && handSecondPlayer == "scissors") || (handFirstPlayer == "scissors" && handSecondPlayer == "rock") {
 			winner = "rock"
+			winnerPlayerId = playerData["rock"]
+			looserPlayerId = playerData["scissors"]
 			db.Model(&games).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, "scissors").Update("round", newRound)
 			db.Model(&games).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, "rock").Update("round", newRound+1)
+
 		} else if handFirstPlayer == "rock" && handSecondPlayer == "paper" || handFirstPlayer == "paper" && handSecondPlayer == "rock" {
 			winner = "paper"
+			winnerPlayerId = playerData["paper"]
+			looserPlayerId = playerData["rock"]
 			db.Model(&games).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, "rock").Update("round", newRound)
 			db.Model(&games).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, "paper").Update("round", newRound+1)
 		} else if (handFirstPlayer == "scissors" && handSecondPlayer == "paper") || handFirstPlayer == "paper" && handSecondPlayer == "scissors" {
 			winner = "scissors"
+			winnerPlayerId = playerData["scissors"]
+			looserPlayerId = playerData["paper"]
 			db.Model(&games).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, "paper").Update("round", newRound)
 			db.Model(&games).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, "scissors").Update("round", newRound+1)
 		} else if handFirstPlayer == handSecondPlayer {
@@ -123,9 +136,37 @@ func CountResult(c *fiber.Ctx) error {
 				},
 				"winner": "draw",
 			})
+		} else {
+			return c.Status(400).JSON(fiber.Map{
+				"message": "Invalid hand choice",
+			})
 		}
 
 		// TODO: update data in code table (is_finished)
+		var codeData model.Code
+		if err := db.Model(&codeData).Where("code = ?", code).Update("is_finished", true).Error; err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"message": "Failed to update game finished",
+			})
+		}
+
+		log.Println(winner, winnerPlayerId, looserPlayerId)
+
+		result := model.Result{
+			Code:            code,
+			HandChoice:      winner,
+			WinnerPlayerIds: []int{winnerPlayerId},
+			LoserPlayerIds:  []int{looserPlayerId},
+			Round:           newRound,
+		}
+
+		log.Println(result)
+
+		if err := db.Create(&result).Error; err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"message": "Failed to insert result",
+			})
+		}
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"continue_round": false,

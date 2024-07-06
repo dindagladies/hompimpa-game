@@ -127,6 +127,7 @@ func GameResult(c *fiber.Ctx) error {
 	}
 
 	result.WinnerPlayer = append(result.WinnerPlayer, detailWinnerPlayers...)
+	result.WinnerPlayerTotal = len(detailWinnerPlayers)
 
 	var detailLoserPlayers []model.Player
 	for _, loserPlayer := range result.LoserPlayerIds {
