@@ -150,8 +150,6 @@ func CountResult(c *fiber.Ctx) error {
 			})
 		}
 
-		log.Println(winner, winnerPlayerId, looserPlayerId)
-
 		result := model.Result{
 			Code:            code,
 			HandChoice:      winner,
@@ -181,6 +179,7 @@ func CountResult(c *fiber.Ctx) error {
 	}
 
 	var votes = make(map[string]int)
+	var listPlayerId []int
 	for _, game := range games {
 		_, exist := votes[game.HandChoice]
 		if exist {
@@ -188,9 +187,45 @@ func CountResult(c *fiber.Ctx) error {
 		} else {
 			votes[game.HandChoice] = 1
 		}
+		listPlayerId = append(listPlayerId, game.PlayerId)
 	}
 
 	if len(votes) <= 1 {
+		if len(listPlayerId) > 1 {
+			handChoice := ""
+			total := 0
+			for hand, vote := range votes {
+				handChoice = hand
+				total = vote
+			}
+
+			result := model.Result{
+				Code:            code,
+				HandChoice:      "DRAW",
+				WinnerPlayerIds: listPlayerId,
+				LoserPlayerIds:  []int{},
+				Round:           newRound,
+			}
+
+			log.Println(result)
+
+			if err := db.Create(&result).Error; err != nil {
+				return c.Status(500).JSON(fiber.Map{
+					"message": "Failed to insert result",
+				})
+			}
+
+			return c.Status(fiber.StatusOK).JSON(fiber.Map{
+				"continue_round": true,
+				"message":        "Game result",
+				"next_game_type": 2,
+				"vote_result": map[string]int{
+					handChoice: total,
+				},
+				"winner": "draw",
+			})
+		}
+
 		return c.Status(400).JSON(fiber.Map{
 			"message":     "Game not finished yet",
 			"vote_result": votes,
