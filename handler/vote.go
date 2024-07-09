@@ -106,6 +106,58 @@ func CountResult(c *fiber.Ctx) error {
 		var winnerPlayerId int
 		var looserPlayerId int
 
+		isFirstPlayerDisqualification := handFirstPlayer == ""
+		isSecondPlayerDisqualification := handSecondPlayer == ""
+
+		/* Check isqualification */
+		if (isFirstPlayerDisqualification) || (isSecondPlayerDisqualification) {
+			var winnerPlayer []int
+			var looserPlayer []int
+			if (isFirstPlayerDisqualification) && (isSecondPlayerDisqualification) {
+				winnerPlayer = []int{0}
+				looserPlayer = []int{games[0].PlayerId, games[1].PlayerId}
+				db.Model(&games).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, "").Update("round", newRound)
+			} else if isFirstPlayerDisqualification {
+				winnerPlayer = []int{games[1].PlayerId}
+				looserPlayer = []int{games[0].PlayerId}
+				db.Model(&games).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, "").Update("round", newRound)
+				db.Model(&games).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, games[1].HandChoice).Update("round", newRound+1)
+			} else if isSecondPlayerDisqualification {
+				winnerPlayer = []int{games[0].PlayerId}
+				looserPlayer = []int{games[1].PlayerId}
+				db.Model(&games).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, "").Update("round", newRound)
+				db.Model(&games).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, games[0].HandChoice).Update("round", newRound+1)
+			}
+
+			result := model.Result{
+				Code:            code,
+				HandChoice:      "DRAW",
+				WinnerPlayerIds: winnerPlayer,
+				LoserPlayerIds:  looserPlayer,
+				Round:           newRound,
+			}
+
+			log.Println(result)
+
+			if err := db.Create(&result).Error; err != nil {
+				return c.Status(500).JSON(fiber.Map{
+					"message": "Failed to insert result",
+				})
+			}
+
+			return c.Status(fiber.StatusOK).JSON(fiber.Map{
+				"continue_round": false,
+				"message":        "Game result",
+				"next_game_type": 0,
+				"vote_result": map[string]int{
+					handFirstPlayer:  1,
+					handSecondPlayer: 1,
+				},
+				"winner": "",
+			})
+		}
+		/* End Check isqualification */
+
 		if (handFirstPlayer == "rock" && handSecondPlayer == "scissors") || (handFirstPlayer == "scissors" && handSecondPlayer == "rock") {
 			winner = "rock"
 			winnerPlayerId = playerData["rock"]
@@ -126,6 +178,23 @@ func CountResult(c *fiber.Ctx) error {
 			db.Model(&games).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, "paper").Update("round", newRound)
 			db.Model(&games).Where("code = ? AND round = ? AND hand_choice = ?", code, 0, "scissors").Update("round", newRound+1)
 		} else if handFirstPlayer == handSecondPlayer {
+			// TODO: test this case (draw in game type 2)
+			result := model.Result{
+				Code:            code,
+				HandChoice:      "DRAW",
+				WinnerPlayerIds: []int{games[0].PlayerId, games[1].PlayerId},
+				LoserPlayerIds:  []int{},
+				Round:           newRound,
+			}
+
+			log.Println(result)
+
+			if err := db.Create(&result).Error; err != nil {
+				return c.Status(500).JSON(fiber.Map{
+					"message": "Failed to insert result",
+				})
+			}
+
 			return c.Status(fiber.StatusOK).JSON(fiber.Map{
 				"continue_round": true,
 				"message":        "Game result",
@@ -157,8 +226,6 @@ func CountResult(c *fiber.Ctx) error {
 			LoserPlayerIds:  []int{looserPlayerId},
 			Round:           newRound,
 		}
-
-		log.Println(result)
 
 		if err := db.Create(&result).Error; err != nil {
 			return c.Status(500).JSON(fiber.Map{

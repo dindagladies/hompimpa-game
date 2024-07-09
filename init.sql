@@ -43,6 +43,7 @@ CREATE TABLE results (
     hand_choice VARCHAR(100) NOT NULL,
     winner_player_ids JSON NULL,
     loser_player_ids JSON NULL,
+    -- disqualification_player_ids JSON NULL,
     round INTEGER NULL,
     created_at TIMESTAMP default now() not NULL
 );

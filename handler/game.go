@@ -100,6 +100,13 @@ func GetGameInfo(c *fiber.Ctx) error {
 		})
 	}
 
+	// get total active player
+	var games []model.Game
+	var totalActivePlayer int64
+	db.Model(&games).Where("code = ? AND round = ?", code, 0).Count(&totalActivePlayer)
+
+	codeGame.TotalActivePlayer = int(totalActivePlayer)
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Game info found",
 		"data":    codeGame,
@@ -127,7 +134,6 @@ func GameResult(c *fiber.Ctx) error {
 	}
 
 	result.WinnerPlayer = append(result.WinnerPlayer, detailWinnerPlayers...)
-	result.WinnerPlayerTotal = len(detailWinnerPlayers)
 
 	var detailLoserPlayers []model.Player
 	for _, loserPlayer := range result.LoserPlayerIds {
